@@ -1,0 +1,41 @@
+{% extends 'chat/base.html' %}
+{% block content %}
+<h2>Chat with {{ user_to_chat.username }}</h2>
+
+<div id="chat-messages">
+    {% for msg in messages %}
+        <div class="{% if msg.sender == request.user %}sent{% else %}received{% endif %}">
+            <strong>{{ msg.sender.username }}:</strong> {{ msg.content }} <br />
+            <small>{{ msg.timestamp }}</small>
+        </div>
+    {% endfor %}
+</div>
+
+<textarea id="messageInput" rows="3"></textarea>
+<button id="sendBtn">Send</button>
+
+<script>
+const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/chat/{{ user_to_chat.username }}/'
+);
+
+chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const message = data.message;
+    const sender = data.sender;
+    const chatMessages = document.getElementById('chat-messages');
+    const newMessage = document.createElement('div');
+    newMessage.innerHTML = '<strong>' + sender + ':</strong> ' + message;
+    chatMessages.appendChild(newMessage);
+};
+
+document.querySelector('#sendBtn').onclick = function(e) {
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value;
+    chatSocket.send(JSON.stringify({
+        'message': message
+    }));
+    messageInput.value = '';
+};
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'chat/base.html' %}
+{% block left_menu %}
+    <h3>Users</h3>
+    <ul>
+        {% for user in all_users %}
+        <li>
+            <a href="{% url 'chat_room' user.username %}">{{ user.username }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+
+{% block content %}
+<h2>Welcome to the Chat App</h2>
+<p>Select a user from the left menu to start chatting.</p>
+{% endblock %}
