@@ -50,7 +50,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
 ROOT_URLCONF = 'realtime_chat.urls'
 
 TEMPLATES = [
@@ -69,7 +73,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'realtime_chat.wsgi.application'
 ASGI_APPLICATION = 'realtime_chat.asgi.application'
 
 
@@ -119,6 +122,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

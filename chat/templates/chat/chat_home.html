@@ -1,16 +1,228 @@
-{% extends 'chat/base.html' %}
-{% block left_menu %}
-    <h3>Users</h3>
-    <ul>
-        {% for user in all_users %}
-        <li>
-            <a href="{% url 'chat_room' user.username %}">{{ user.username }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat Home</title>
+  <style>
+    /* ========== Basic reset & global styles ========== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; font-family: "Segoe UI", Tahoma, sans-serif; background: #f0f2f5; color: #333; }
 
-{% block content %}
-<h2>Welcome to the Chat App</h2>
-<p>Select a user from the left menu to start chatting.</p>
-{% endblock %}
+    /* ========== Navbar ========== */
+    .navbar {
+      height: 60px; background: #343a40; color: #fff;
+      display: flex; align-items: center; padding: 0 20px;
+      justify-content: space-between;
+    }
+    .navbar h1 { font-size: 1.2rem; }
+    .navbar .nav-right { display: flex; gap: 20px; align-items: center; }
+    .logout-btn {
+      background-color: #dc3545; border: none; padding: 6px 12px; border-radius: 4px; color: #fff; cursor: pointer;
+    }
+
+    /* ========== Footer ========== */
+    .footer {
+      height: 40px; background: #343a40; color: #fff; text-align: center; line-height: 40px;
+    }
+
+    /* ========== Layout ========== */
+    .layout {
+      display: flex; min-height: calc(100vh - 100px);
+    }
+    .left-menu {
+      width: 240px; background: #fff; border-right: 1px solid #ced4da; padding: 10px;
+      transition: width 0.3s; overflow: hidden;
+    }
+    .left-menu h3 { margin-bottom: 10px; }
+    .left-menu ul { list-style: none; }
+    .left-menu li a {
+      display: block; padding: 4px; border-radius: 4px; color: #333; margin-bottom: 6px; text-decoration: none;
+    }
+    .left-menu li a:hover { background: #e9ecef; }
+
+    .main-content {
+      flex: 1; display: flex; flex-direction: column; padding: 10px; background: #fff;
+    }
+    .chat-header { margin-bottom: 10px; }
+    .chat-header h2 { font-size: 1rem; }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; border: 1px solid #ced4da; border-radius: 4px; padding: 10px; margin-bottom: 10px; background: #fafafa;
+    }
+    .message { margin: 5px 0; line-height: 1.4; }
+    .sent { text-align: right; color: #28a745; }
+    .received { text-align: left; color: #007bff; }
+
+    .input-area { display: flex; gap: 10px; }
+    .input-area textarea {
+      flex: 1; resize: none; height: 40px; font-size: 1rem; padding: 6px; border: 1px solid #ced4da; border-radius: 4px;
+    }
+    .input-area button {
+      background-color: #007bff; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;
+    }
+
+    /* Collapsible effect if desired */
+    .collapsed { width: 60px; }
+    .collapsed h3, .collapsed ul { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="navbar">
+    <h1>My Chat App</h1>
+    <div class="nav-right">
+      <span>Hello, {{ request.user.username }}</span>
+      <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="logout-btn">Logout</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+    <!-- Left Menu -->
+    <div class="left-menu" id="leftMenu">
+      <button id="toggleMenuBtn">Toggle</button>
+      <h3>All Users</h3>
+      <ul>
+        {% for u in all_users %}
+          <li>
+            <a href="#" class="user-link" data-username="{{u.username}}">
+              {{ u.username }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="chat-header">
+        <h2 id="chatWithTitle">Select a user to chat with</h2>
+      </div>
+      <!-- Message Display -->
+      <div class="chat-messages" id="messagesContainer"></div>
+      <!-- Input area -->
+      <div class="input-area">
+        <textarea id="messageInput" placeholder="Type a message..."></textarea>
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    &copy; 2025 My Chat App
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const leftMenu = document.getElementById('leftMenu');
+      const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+      const messagesContainer = document.getElementById('messagesContainer');
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const chatWithTitle = document.getElementById('chatWithTitle');
+
+      let chatSocket = null;
+      let currentUser = null;  // store the username we are chatting with
+
+      // 1) Toggle Left Menu (collapsible)
+      toggleMenuBtn.addEventListener('click', () => {
+        leftMenu.classList.toggle('collapsed');
+      });
+
+      // 2) When user clicks another user in the list
+      document.querySelectorAll('.user-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const username = link.getAttribute('data-username');
+          if (username) {
+            openChatWith(username);
+          }
+        });
+      });
+
+      function openChatWith(username) {
+        currentUser = username;
+        chatWithTitle.textContent = `Chat with ${username}`;
+
+        // Close any existing socket
+        if (chatSocket) {
+          chatSocket.close();
+        }
+
+        // Clear old messages
+        messagesContainer.innerHTML = '';
+
+        // 2a) Fetch old messages via AJAX (optional) or embed them in the page
+        fetchOldMessages(username);
+
+        // 2b) Open WebSocket for real-time chat
+        chatSocket = new WebSocket(
+          'ws://' + window.location.host + '/ws/chat/' + username + '/'
+        );
+
+        // On receive from server
+        chatSocket.onmessage = function(e) {
+          const data = JSON.parse(e.data);
+          const message = data.message;
+          const sender = data.sender;
+          addMessage(sender, message);
+        };
+
+        chatSocket.onclose = function(e) {
+          console.log('WebSocket closed');
+        };
+      }
+
+      // 3) Send a message
+      sendBtn.addEventListener('click', () => {
+        const msg = messageInput.value.trim();
+        if (msg && chatSocket) {
+          chatSocket.send(JSON.stringify({
+            'message': msg
+          }));
+          messageInput.value = '';
+        }
+      });
+
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+
+      // 4) Add message to the chat window
+      function addMessage(sender, text) {
+        const msgDiv = document.createElement('div');
+        if (sender === '{{ request.user.username }}') {
+          msgDiv.className = 'message sent';
+          msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        } else {
+          msgDiv.className = 'message received';
+          msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        }
+        messagesContainer.appendChild(msgDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      // 5) Fetch Old Messages
+      function fetchOldMessages(username) {
+        // We'll call an endpoint that returns JSON of the old messages between the current user and "username"
+        fetch(`/chat/get_old_messages/${username}/`)
+          .then(response => response.json())
+          .then(data => {
+            // data should be a list of {sender, content, timestamp}
+            data.forEach(msg => {
+              addMessage(msg.sender, msg.content);
+            });
+          })
+          .catch(err => console.error(err));
+      }
+    });
+  </script>
+</body>
+</html>

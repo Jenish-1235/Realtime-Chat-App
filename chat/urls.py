@@ -1,8 +1,12 @@
 from django.urls import path
-from .views import signup_view, chat_home, chat_room
+from . import views
 
 urlpatterns = [
-    path('signup/', signup_view, name='signup'),
-    path('', chat_home, name='chat_home'),
-    path('<str:username>/', chat_room, name='chat_room'),
+    path('', views.chat_home, name='chat_home'),
+    # We might have separate signup, login, logout, etc.:
+    path('signup/', views.signup_view, name='signup'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('get_old_messages/<str:username>/', views.get_old_messages, name='get_old_messages'),
+
 ]
