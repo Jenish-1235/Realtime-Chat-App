@@ -64,11 +64,17 @@
     /* Collapsible effect if desired */
     .collapsed { width: 60px; }
     .collapsed h3, .collapsed ul { display: none; }
+
+    #toggleMenuBtn { 
+      background: #4380bc; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;
+     }
   </style>
 </head>
 <body>
   <!-- Navbar -->
   <div class="navbar">
+    
+    <button id="toggleMenuBtn">Toggle Chat Panel</button>
     <h1>My Chat App</h1>
     <div class="nav-right">
       <span>Hello, {{ request.user.username }}</span>
@@ -83,7 +89,6 @@
   <div class="layout">
     <!-- Left Menu -->
     <div class="left-menu" id="leftMenu">
-      <button id="toggleMenuBtn">Toggle</button>
       <h3>All Users</h3>
       <ul>
         {% for u in all_users %}

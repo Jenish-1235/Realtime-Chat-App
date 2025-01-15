@@ -1,15 +1,148 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
   <title>Signup</title>
+  <style>
+    /* ========== Reset & Global Styles ========== */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    html, body {
+        width: 100%;
+        height: 100%;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #ece9e6, #ffffff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ========== Form Container ========== */
+    .form-container {
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+    }
+
+    /* ========== Form Heading ========== */
+    .form-container h2 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #333333;
+    }
+
+    /* ========== Form Groups ========== */
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555555;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #cccccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .form-group input:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    /* ========== Submit Button ========== */
+    .btn-submit {
+        width: 100%;
+        padding: 12px 16px;
+        background-color: #007bff;
+        border: none;
+        border-radius: 8px;
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .btn-submit:hover {
+        background-color: #0056b3;
+    }
+
+    /* ========== Form Footer ========== */
+    .form-footer {
+        text-align: center;
+        margin-top: 20px;
+        color: #555555;
+    }
+
+    .form-footer a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s;
+    }
+
+    .form-footer a:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    /* ========== Responsive Design ========== */
+    @media (max-width: 480px) {
+        .form-container {
+            padding: 30px 20px;
+        }
+        .form-container h2 {
+            font-size: 1.5rem;
+        }
+        .btn-submit {
+            font-size: 0.9rem;
+        }
+    }
+</style>
 </head>
 <body>
-  <h1>Signup</h1>
-  <form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Sign Up</button>
-  </form>
-  <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+<div class="form-container">
+    <h2>Create an Account</h2>
+    <form method="POST">
+        {% csrf_token %}        
+        <!-- Username Field -->
+        <div class="form-group">
+            <label for="id_username">Username</label>
+            <input type="text" name="username" maxlength="150" autocapitalize="none" autocomplete="username" autofocus required id="id_username" placeholder="Enter your username">
+        </div>
+        
+        <!-- Password Field -->
+        <div class="form-group">
+            <label for="id_password1">Password</label>
+            <input type="password" name="password1" autocomplete="new-password" required id="id_password1" placeholder="Enter your password">
+        </div>
+        
+        <!-- Password Confirmation Field -->
+        <div class="form-group">
+            <label for="id_password2">Confirm Password</label>
+            <input type="password" name="password2" autocomplete="new-password" required id="id_password2" placeholder="Confirm your password">
+        </div>
+        
+        <!-- Submit Button -->
+        <button type="submit" class="btn-submit">Sign Up</button>
+    </form>
+    <div class="form-footer">
+        Already have an account? <a href="{% url 'login' %}">Login here</a>
+    </div>
+</div>
 </body>
 </html>
